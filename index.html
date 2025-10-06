@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>주식 매도 계산기</title>
+    <title>주식 손익분기점 계산기</title>
     <style>
         body {
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
@@ -65,44 +65,34 @@
             margin-top: 25px;
             padding-top: 20px;
             border-top: 1px solid #eee;
+            text-align: center; /* 결과를 중앙 정렬 */
         }
         .result p {
             margin: 12px 0;
             font-size: 16px;
-            display: flex;
-            justify-content: space-between;
         }
         .result span {
             font-weight: bold;
         }
-        .result .highlight-blue {
-            color: #1a73e8;
-            font-size: 18px;
-        }
         .result .highlight-red {
             color: #d93025;
-            font-size: 18px;
+            font-size: 22px; /* 손익분기점 글씨 크기 강조 */
         }
     </style>
 </head>
 <body>
 
     <div class="container">
-        <h1>📈 주식 매도 계산기</h1>
+        <h1>📈 주식 손익분기점 계산기</h1>
 
         <div class="input-group">
-            <label for="buy-price">매수 평균 가격 (원)</label>
+            <label for="buy-price">매수 가격 (원)</label>
             <input type="number" id="buy-price" placeholder="주당 매수 가격">
         </div>
 
         <div class="input-group">
             <label for="quantity">보유 수량 (주)</label>
-            <input type="number" id="quantity" placeholder="총 주식 수">
-        </div>
-
-        <div class="input-group">
-            <label for="sell-price">현재 (매도) 가격 (원)</label>
-            <input type="number" id="sell-price" placeholder="주당 매도 희망 가격">
+            <input type="number" id="quantity" placeholder="총 주식 수 (계산에 영향 없음)">
         </div>
         
         <div class="input-group sub-input-group">
@@ -119,8 +109,6 @@
         <button onclick="calculate()">계산하기</button>
 
         <div class="result" id="result-area">
-            <p>수수료/세금: <span id="fee-tax">0 원</span></p>
-            <p class="highlight-blue">예상 수령액: <span id="received-amount">0 원</span></p>
             <p class="highlight-red">손익분기점: <span id="bep-price">0 원/주</span></p>
         </div>
     </div>
@@ -129,21 +117,19 @@
         function calculate() {
             // --- 입력값 가져오기 ---
             const buyPrice = parseInt(document.getElementById('buy-price').value);
+            // 보유 수량은 손익분기점 단가 계산에 필요 없으므로, 값만 받아오고 사용하지 않음
             const quantity = parseInt(document.getElementById('quantity').value);
-            const sellPrice = parseInt(document.getElementById('sell-price').value);
 
-            // 수수료율과 세율 입력값 가져오기
             let feeRateInput = document.getElementById('fee-rate').value;
             let taxRateInput = document.getElementById('tax-rate').value;
 
             // --- 유효성 검사 ---
-            if (isNaN(buyPrice) || isNaN(quantity) || isNaN(sellPrice) || buyPrice <= 0 || quantity <= 0 || sellPrice <= 0) {
-                alert("매수, 수량, 매도 가격에 올바른 숫자를 입력해주세요.");
+            if (isNaN(buyPrice) || buyPrice <= 0) {
+                alert("매수 가격에 올바른 숫자를 입력해주세요.");
                 return;
             }
 
             // --- 수수료/세율 설정 (입력 없으면 기본값) ---
-            // 사용자가 입력한 값이 비어있으면 ''(빈 문자열)이 됨.
             const feePercent = (feeRateInput === '') ? 0.015 : parseFloat(feeRateInput);
             const taxPercent = (taxRateInput === '') ? 0.23 : parseFloat(taxRateInput);
 
@@ -152,16 +138,11 @@
             const taxRate = taxPercent / 100;
             
             // --- 계산 로직 ---
-            const totalSellAmount = sellPrice * quantity;
-            const commission = totalSellAmount * feeRate;
-            const tax = totalSellAmount * taxRate;
-            const totalDeduction = commission + tax;
-            const actualReceived = totalSellAmount - totalDeduction;
+            // 손익분기점 (손해 보지 않는 최소 매도 단가)
+            // 공식: 매수가 / (1 - (수수료율 + 세율))
             const breakEvenPoint = buyPrice / (1 - (feeRate + taxRate));
 
             // --- 결과 표시 ---
-            document.getElementById('fee-tax').innerText = Math.round(totalDeduction).toLocaleString('ko-KR') + " 원";
-            document.getElementById('received-amount').innerText = Math.round(actualReceived).toLocaleString('ko-KR') + " 원";
             document.getElementById('bep-price').innerText = Math.ceil(breakEvenPoint).toLocaleString('ko-KR') + " 원/주";
         }
     </script>
